@@ -1,13 +1,13 @@
 package com.example.logindemo.controller;
 
 import com.example.logindemo.config.JwtUtil;
+import com.example.logindemo.config.LoginAttemptService;
 import com.example.logindemo.model.Users;
 import com.example.logindemo.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
 
 @RestController
 @RequestMapping("/api")
@@ -17,10 +17,13 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     private final JwtUtil jwtUtil;
-    public AuthController(PasswordEncoder passwordEncoder, UserRepository userRepository, JwtUtil jwtUtil) {
+    private final LoginAttemptService loginAttemptService;
+
+    public AuthController(PasswordEncoder passwordEncoder, UserRepository userRepository, JwtUtil jwtUtil, LoginAttemptService loginAttemptService) {
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @PostMapping("/register")
@@ -36,6 +39,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public String loginUser(@Valid @RequestBody Users loginData) {
+
+        if (loginAttemptService.isBlocked(loginData.getUsername())) {
+            return "Error: Account temporarily locked due to too many failed attempts. Try again in a few minutes.";
+        }
+
         Users existingUser = userRepository.findByUsername(loginData.getUsername());
 
         if (existingUser != null) {
@@ -43,9 +51,11 @@ public class AuthController {
             boolean matches = passwordEncoder.matches(loginData.getPassword(), existingUser.getPassword());
 
             if (matches) {
+                loginAttemptService.loginSucceeded(existingUser.getUsername());
                 String token = jwtUtil.generateToken(existingUser.getUsername(), existingUser.getRole());
                 return token;
             } else {
+                loginAttemptService.loginFailed(loginData.getUsername());
                 return "Error: Incorrect Password!";
             }
         } else {
