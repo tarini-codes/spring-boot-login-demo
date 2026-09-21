@@ -13,14 +13,15 @@ public class LoginAttemptService {
     private static final long LOCK_DURATION_MS = 5 * 60 * 1000;
 
     private final Map<String, Integer> attemptsCache = new ConcurrentHashMap<>();
-    private static Map<String, Long> lockCache = new ConcurrentHashMap<>();
-
+    private final Map<String, Long> lockCache = new ConcurrentHashMap<>();
     public void loginFailed(String username) {
         int attempts = attemptsCache.getOrDefault(username, 0) + 1;
         attemptsCache.put(username, attempts);
+        System.out.println("DEBUG: " + username + " has " + attempts + " failed attempts");
 
         if (attempts >= MAX_ATTEMPTS) {
             lockCache.put(username, System.currentTimeMillis() + LOCK_DURATION_MS);
+            System.out.println("DEBUG: " + username + " is now LOCKED until " + lockCache.get(username));
         }
     }
 
@@ -31,6 +32,7 @@ public class LoginAttemptService {
 
     public boolean isBlocked(String username) {
         Long lockedUntil = lockCache.get(username);
+        System.out.println("DEBUG: Checking isBlocked for " + username + ", lockedUntil=" + lockedUntil + ", now=" + System.currentTimeMillis());
 
         if (lockedUntil == null) {
             return false;
