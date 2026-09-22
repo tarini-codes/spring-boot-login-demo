@@ -23,7 +23,7 @@ A production-pattern authentication and authorization system built with Spring B
 
 | Layer | Technology |
 |---|---|
-| Language | Java 17 |
+| Language | Java 21 |
 | Framework | Spring Boot 4.1.1 |
 | Security | Spring Security, JJWT (JSON Web Tokens) |
 | Persistence | Spring Data JPA + Hibernate |
