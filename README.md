@@ -43,6 +43,7 @@ A production-pattern authentication and authorization system built with Spring B
 
 Full interactive documentation, including request/response schemas, is available via [Swagger UI](https://spring-boot-login-demo-production.up.railway.app/swagger-ui/index.html).
 
+## Architecture Overview
 Client → JwtFilter → Spring Security Filter Chain → Controller
 ↓
 GlobalExceptionHandler
@@ -78,4 +79,15 @@ Clean JSON response
 
 This started as a basic login/register demo and was incrementally hardened into a security-conscious REST API — covering the gap between "it works" and "it's safe to ship." Each stage (hashing → Spring Security → JWT → RBAC → validation → secrets management → rate limiting → documentation) was added and independently verified, both locally and in a live Railway deployment.
 
-## Architecture Overview
+## Screenshots
+
+### Swagger UI — API Documentation
+![Swagger UI](docs/screenshots/swagger-ui.png)
+
+### Successful Authentication
+![Auth Success](docs/screenshots/auth-success.png)
+![Auth Success](docs/screenshots/auth-success1.png)
+
+### Rate Limiting / Account Lockout
+![Rate Limit](docs/screenshots/rate-limit.png)
+![Rate Limit](docs/screenshots/rate-limit1.png)
