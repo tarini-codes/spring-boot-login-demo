@@ -14,6 +14,8 @@ public class LoginAttemptService {
 
     private final Map<String, Integer> attemptsCache = new ConcurrentHashMap<>();
     private final Map<String, Long> lockCache = new ConcurrentHashMap<>();
+
+    // force rebuild
     public void loginFailed(String username) {
         int attempts = attemptsCache.getOrDefault(username, 0) + 1;
         attemptsCache.put(username, attempts);
