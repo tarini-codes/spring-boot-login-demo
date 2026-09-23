@@ -23,7 +23,6 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
     private final JwtUtil jwtUtil;
     private final LoginAttemptService loginAttemptService;
 
@@ -41,14 +40,16 @@ public class AuthController {
     })
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody Users user) {
-        if (userRepository.findByUsername(user.getUsername()) != null) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
+        if (userRepository.findByUsername(request.getUsername()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Username already taken"));
         }
 
-        String rawPassword = user.getPassword();
-        user.setPassword(passwordEncoder.encode(rawPassword));
+        Users user = new Users();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole("USER");
+
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User registered successfully!"));
     }
@@ -61,7 +62,7 @@ public class AuthController {
     })
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@Valid @RequestBody Users loginData) {
+    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginData) {
 
         if (loginAttemptService.isBlocked(loginData.getUsername())) {
             return ResponseEntity.status(HttpStatus.LOCKED)
@@ -70,23 +71,22 @@ public class AuthController {
 
         Users existingUser = userRepository.findByUsername(loginData.getUsername());
 
-        if (existingUser != null) {
-
-            boolean matches = passwordEncoder.matches(loginData.getPassword(), existingUser.getPassword());
-
-            if (matches) {
-                loginAttemptService.loginSucceeded(existingUser.getUsername());
-                String token = jwtUtil.generateToken(existingUser.getUsername(), existingUser.getRole());
-                return ResponseEntity.ok(Map.of("token", token));
-            } else {
-                loginAttemptService.loginFailed(loginData.getUsername());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Incorrect Password!"));
-            }
-        } else {
+        if (existingUser == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "User not found! please register first!"));
         }
+
+        boolean matches = passwordEncoder.matches(loginData.getPassword(), existingUser.getPassword());
+
+        if (!matches) {
+            loginAttemptService.loginFailed(loginData.getUsername());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Incorrect Password!"));
+        }
+
+        loginAttemptService.loginSucceeded(existingUser.getUsername());
+        String token = jwtUtil.generateToken(existingUser.getUsername(), existingUser.getRole());
+        return ResponseEntity.ok(Map.of("token", token));
     }
 
     @ApiResponses(value = {
@@ -101,7 +101,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
         }
         String username = auth.getName();
-        return ResponseEntity.ok(Map.of("message", "Welcome to your protectect file, " + username + "!"));
+        return ResponseEntity.ok(Map.of("message", "Welcome to your protected profile, " + username + "!"));
     }
 
     @ApiResponses(value = {
@@ -114,5 +114,4 @@ public class AuthController {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(Map.of("message", "Welcome to the Admin Dashboard! " + username + "!"));
     }
-
 }
