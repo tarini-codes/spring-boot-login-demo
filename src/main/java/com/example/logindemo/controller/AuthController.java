@@ -4,10 +4,14 @@ import com.example.logindemo.config.JwtUtil;
 import com.example.logindemo.config.LoginAttemptService;
 import com.example.logindemo.model.Users;
 import com.example.logindemo.repository.UserRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -27,21 +31,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String registerUser(@Valid @RequestBody Users user) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody Users user) {
         String rawPassword = user.getPassword();
         user.setPassword(passwordEncoder.encode(rawPassword));
-
         user.setRole("USER");
-
         userRepository.save(user);
-        return "User registered successfully";
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User registered successfully!"));
     }
 
     @PostMapping("/login")
-    public String loginUser(@Valid @RequestBody Users loginData) {
+    public ResponseEntity<?> loginUser(@Valid @RequestBody Users loginData) {
 
         if (loginAttemptService.isBlocked(loginData.getUsername())) {
-            return "Error: Account temporarily locked due to too many failed attempts. Try again in a few minutes.";
+            return ResponseEntity.status(HttpStatus.LOCKED)
+                    .body(Map.of("error", "Account temporarily locked due to too many failed attempts. Try again in a few minutes."));
         }
 
         Users existingUser = userRepository.findByUsername(loginData.getUsername());
@@ -53,29 +56,32 @@ public class AuthController {
             if (matches) {
                 loginAttemptService.loginSucceeded(existingUser.getUsername());
                 String token = jwtUtil.generateToken(existingUser.getUsername(), existingUser.getRole());
-                return token;
+                return ResponseEntity.ok(Map.of("token", token));
             } else {
                 loginAttemptService.loginFailed(loginData.getUsername());
-                return "Error: Incorrect Password!";
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Incorrect Password!"));
             }
         } else {
-            return "Error: User not found! please register first!";
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User not found! please register first!"));
         }
-    }
-
-    @GetMapping("/admin/dashboard")
-    public String getAdminDashboard() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return "Welcome to the Admin Dashboard, " + username + "!";
     }
 
     @GetMapping("/profile")
-    public String getProfile() {
+    public ResponseEntity<?> getProfile() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) {
-            return "Error: Not authenticated";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
         }
         String username = auth.getName();
-        return "Welcome to your protected profile, " + username + "!";
+        return ResponseEntity.ok(Map.of("message", "Welcome to your protectect file, " + username + "!"));
     }
+
+    @GetMapping("/admin/dashboard")
+    public ResponseEntity<?> getAdminDashboard() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(Map.of("message", "Welcome to the Admin Dashboard! " + username + "!"));
+    }
+
 }
