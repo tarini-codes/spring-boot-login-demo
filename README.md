@@ -23,7 +23,7 @@ A production-pattern authentication and authorization system built with Spring B
 
 | Layer | Technology |
 |---|---|
-| Language | Java 17 |
+| Language | Java 21 |
 | Framework | Spring Boot 4.1.1 |
 | Security | Spring Security, JJWT (JSON Web Tokens) |
 | Persistence | Spring Data JPA + Hibernate |
@@ -78,16 +78,3 @@ Clean JSON response
 ## What This Project Demonstrates
 
 This started as a basic login/register demo and was incrementally hardened into a security-conscious REST API — covering the gap between "it works" and "it's safe to ship." Each stage (hashing → Spring Security → JWT → RBAC → validation → secrets management → rate limiting → documentation) was added and independently verified, both locally and in a live Railway deployment.
-
-## Screenshots
-
-### Swagger UI — API Documentation
-![Swagger UI](docs/screenshots/swagger-ui.png)
-
-### Successful Authentication
-![Auth Success](docs/screenshots/auth-success.png)
-![Auth Success](docs/screenshots/auth-success1.png)
-
-### Rate Limiting / Account Lockout
-![Rate Limit](docs/screenshots/rate-limit.png)
-![Rate Limit](docs/screenshots/rate-limit1.png)
