@@ -32,6 +32,10 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody Users user) {
+        if (userRepository.findByUsername(user.getUsername()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Username already taken"));
+        }
+
         String rawPassword = user.getPassword();
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setRole("USER");
