@@ -2,8 +2,10 @@
 
 A production-pattern authentication and authorization system built with Spring Boot, featuring JWT-based stateless auth, role-based access control, and a full security hardening pipeline.
 
-🔗 **Live demo:** https://spring-boot-login-demo-production.up.railway.app  
-📘 **API docs (Swagger UI):** https://spring-boot-login-demo-production.up.railway.app/swagger-ui/index.html
+🔗 **Live demo (Render):** https://spring-boot-login-demo.onrender.com  
+📘 **API docs (Swagger UI):** https://spring-boot-login-demo.onrender.com/swagger-ui/index.html
+
+> **Note:** This is hosted on a free tier. If the app has been idle, the first request can take 1-2 minutes while the server wakes up. Please wait for the page to load.
 
 ---
 
@@ -16,7 +18,7 @@ A production-pattern authentication and authorization system built with Spring B
 - **Input validation** — request-level validation (`@Valid`, `@NotBlank`, `@Size`) with clean, structured error responses
 - **Centralized exception handling** — a global `@RestControllerAdvice` ensures no stack traces or internal details ever reach the client
 - **Brute-force protection** — accounts are temporarily locked (5 failed attempts → 5-minute lockout) to mitigate credential-stuffing attacks
-- **Externalized secrets** — database credentials are environment-based, not hardcoded
+- **Externalized secrets** — database credentials and the JWT secret are environment-based, not hardcoded
 - **REST-compliant status codes** across every endpoint
 - **Interactive API docs** — OpenAPI/Swagger UI auto-generated from the codebase
 
@@ -28,9 +30,9 @@ A production-pattern authentication and authorization system built with Spring B
 | Framework | Spring Boot 4.1.1 |
 | Security | Spring Security, JJWT (JSON Web Tokens) |
 | Persistence | Spring Data JPA + Hibernate |
-| Database | PostgreSQL (Neon, cloud-hosted) | 
+| Database | PostgreSQL (Neon, cloud-hosted) |
 | Docs | springdoc-openapi (Swagger UI) |
-| Deployment | Railway (Docker-based) |
+| Deployment | Render (Docker-based) |
 | Build | Maven |
 
 ## API Endpoints
@@ -42,16 +44,17 @@ A production-pattern authentication and authorization system built with Spring B
 | GET | `/api/profile` | Authenticated | `200 OK` | `401` not authenticated |
 | GET | `/api/admin/dashboard` | `ADMIN` only | `200 OK` | `403` insufficient role |
 
-Full interactive documentation, including request/response schemas, is available via [Swagger UI](https://spring-boot-login-demo-production.up.railway.app/swagger-ui/index.html).
+Full interactive documentation, including request/response schemas, is available via [Swagger UI](https://spring-boot-login-demo.onrender.com/swagger-ui/index.html).
 
 ## Architecture Overview
 
+```
 Client → JwtFilter → Spring Security Filter Chain → Controller
-↓
-GlobalExceptionHandler
-↓
-Clean JSON response
-
+                                                        ↓
+                                              GlobalExceptionHandler
+                                                        ↓
+                                                Clean JSON response
+```
 
 - `JwtFilter` intercepts every request, validates the token (if present), and populates the Spring Security context with the authenticated user's identity and role.
 - `SecurityConfig` defines which endpoints are public, which require authentication, and which require a specific role — and enforces a stateless session policy.
@@ -69,7 +72,7 @@ Clean JSON response
 
 ## Security Design Notes
 
-- **Database credentials are never committed to source control.** They are injected via environment variables (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`) — locally via a git-ignored `application-local.properties`, and in production via Railway's environment variable settings.
+- **Secrets are never committed to source control.** The database URL, username, password and `JWT_SECRET` are injected via environment variables — locally via a git-ignored `application-local.properties`, and in production via Render's environment variable settings.
 - **New users can never self-assign a role.** The `role` field is always set server-side to `USER` on registration, regardless of what the client sends — preventing privilege escalation via the registration endpoint.
 - **Login lockout is time-bound and automatic.** After 5 failed attempts, an account is locked for 5 minutes; the lock clears itself once the window passes, with no manual intervention needed.
 
@@ -77,24 +80,24 @@ Clean JSON response
 
 1. Clone the repo and open it in your IDE:
 ```bash
-   git clone https://github.com/tarini-codes/spring-boot-login-demo.git
+git clone https://github.com/tarini-codes/spring-boot-login-demo.git
 ```
 2. Create `src/main/resources/application-local.properties` with:
 ```properties
-   DB_URL=<your-postgres-jdbc-url>
-   DB_USERNAME=<your-db-username>
-   DB_PASSWORD=<your-db-password>
-   JWT_SECRET=<a-32+-character-random-string>
+DB_URL=<your-postgres-jdbc-url>
+DB_USERNAME=<your-db-username>
+DB_PASSWORD=<your-db-password>
+JWT_SECRET=<a-32+-character-random-string>
 ```
 3. Run with the `local` Spring profile active:
 ```bash
-   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 4. Visit `http://localhost:8080/swagger-ui/index.html` to explore the API.
 
 ## What This Project Demonstrates
 
-This started as a basic login/register demo and was incrementally hardened into a security-conscious REST API — covering the gap between "it works" and "it's safe to ship." Each stage (hashing → Spring Security → JWT → RBAC → validation → secrets management → rate limiting → documentation) was added and independently verified, both locally and in a live Railway deployment.
+This started as a basic login/register demo and was incrementally hardened into a security-conscious REST API — covering the gap between "it works" and "it's safe to ship." Each stage (hashing → Spring Security → JWT → RBAC → validation → secrets management → rate limiting → documentation) was added and independently verified, both locally and in a live cloud deployment.
 
 ## Screenshots
 
